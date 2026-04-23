@@ -3,9 +3,9 @@
 	"id": "terrain-addon",
 	"version": "${version}",
 	"name": "TerrainAddon",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "this addon to worldedite allows you to make easy terrain with one command just do //terrain <noise pattern> <height> <scale> <octaves> <roughness> <block>",
 	"authors": [
-		"Me!"
+		"oleboyhunter"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
