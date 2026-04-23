@@ -23,6 +23,7 @@ group = project.maven_group
 
 repositories {
 	maven { url = 'https://maven.enginehub.org/repo/' }
+	maven { url = 'https://maven.enginehub.org/snapshots/' }
 }
 
 fabricApi {
@@ -37,7 +38,10 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	modImplementation("com.sk89q.worldedit:worldedit-fabric-mc1.21.11:7.4.2")
+	modImplementation("com.sk89q.worldedit:worldedit-fabric-mc1.21.11:7.3.18-SNAPSHOT") {
+		exclude group: 'com.mojang'
+		exclude group: 'net.fabricmc'
+	}
 }
 
 processResources {

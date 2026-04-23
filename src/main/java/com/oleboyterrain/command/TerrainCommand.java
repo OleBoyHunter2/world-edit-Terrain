@@ -20,6 +20,8 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.command.permission.Permission;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -49,7 +51,7 @@ public class TerrainCommand {
 
     private static LiteralArgumentBuilder<ServerCommandSource> buildTerrainCommand() {
         return literal("terrain")
-                .requires(src -> src.hasPermissionLevel(2))
+                .requires(src -> src.getPermissions().hasPermission(new Permission.Level(PermissionLevel.GAMEMASTERS)))
                 .then(argument("noiseType", StringArgumentType.word())
                         .suggests(NOISE_SUGGESTIONS)
                         .then(argument("height", IntegerArgumentType.integer(1, 256))
