@@ -1,0 +1,109 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'maven-publish'
+}
+
+def currentModVersion = project.mod_version.toString()
+def isReleaseBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains("releasemod") }
+
+def bumpMinorVersion = { String versionString ->
+	def parts = versionString.tokenize('.')
+	if (parts.size() != 3) {
+		throw new GradleException("mod_version must use semantic versioning like x.y.z")
+	}
+	def major = parts[0] as int
+	def minor = parts[1] as int
+	"${major}.${minor + 1}.0"
+}
+
+def releaseModVersion = isReleaseBuild ? bumpMinorVersion(currentModVersion) : currentModVersion
+
+version = releaseModVersion
+group = project.maven_group
+
+repositories {
+	maven { url = 'https://maven.enginehub.org/repo/' }
+}
+
+fabricApi {
+	configureDataGeneration {
+		client = true
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	modImplementation("com.sk89q.worldedit:worldedit-fabric-mc1.21.11:7.4.2")
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	inputs.property "projectName", project.name
+	from("LICENSE") {
+		rename { "${it}_${project.name}" }
+	}
+}
+
+def releaseOutputDir = file('E:/TerrainAddon')
+
+tasks.register("copyReleaseJar") {
+	dependsOn tasks.named("remapJar")
+	doNotTrackState("Copies the finished jar into an external folder outside the project workspace.")
+	doLast {
+		copy {
+			into releaseOutputDir
+			from(tasks.named("remapJar").get().archiveFile)
+			rename { "${project.name}-${project.version}.jar" }
+		}
+	}
+}
+
+tasks.register("writeVersionBack") {
+	onlyIf { isReleaseBuild }
+	doLast {
+		def propsFile = file("gradle.properties")
+		def updated = propsFile.getText("UTF-8").replaceFirst(
+				/(?m)^mod_version=.*/,
+				"mod_version=${project.version}"
+		)
+		propsFile.write(updated, "UTF-8")
+		println "Updated mod_version to ${project.version}"
+	}
+}
+
+tasks.register("releaseMod") {
+	group = "build"
+	description = "Builds the next minor version and copies the remapped jar to E:/TerrainAddon."
+	dependsOn tasks.named("build")
+	dependsOn tasks.named("copyReleaseJar")
+	finalizedBy tasks.named("writeVersionBack")
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+	repositories {}
+}
