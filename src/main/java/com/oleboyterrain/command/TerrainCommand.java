@@ -20,8 +20,6 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -31,6 +29,7 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class TerrainCommand {
+
     private static final SuggestionProvider<ServerCommandSource> NOISE_SUGGESTIONS = (context, builder) -> {
         for (NoiseType noiseType : NoiseType.values()) {
             builder.suggest(noiseType.name().toLowerCase());
@@ -50,8 +49,7 @@ public class TerrainCommand {
 
     private static LiteralArgumentBuilder<ServerCommandSource> buildTerrainCommand() {
         return literal("terrain")
-                .requires(src -> src.getPermissions().hasPermission(new Permission.Level(PermissionLevel.fromLevel(2))))
-                // /terrain <noiseType> <height> <scale> <octaves> <roughness> <block>
+                .requires(src -> src.hasPermissionLevel(2))
                 .then(argument("noiseType", StringArgumentType.word())
                         .suggests(NOISE_SUGGESTIONS)
                         .then(argument("height", IntegerArgumentType.integer(1, 256))
@@ -100,7 +98,7 @@ public class TerrainCommand {
                                                                                 .getBlockFactory()
                                                                                 .parseFromInput(blockArg, parserContext);
                                                                     } catch (InputParseException e) {
-                                                                        source.sendError(Text.literal("Invalid WorldEdit block: " + blockArg));
+                                                                        source.sendError(Text.literal("Invalid block: " + blockArg));
                                                                         return 0;
                                                                     }
 
@@ -113,32 +111,21 @@ public class TerrainCommand {
                                                                     }
 
                                                                     if (!(region instanceof CuboidRegion cuboid)) {
-                                                                        source.sendError(Text.literal("Selection must be a cuboid (//pos1 and //pos2)."));
+                                                                        source.sendError(Text.literal("Selection must be a cuboid."));
                                                                         return 0;
                                                                     }
 
                                                                     EditSession editSession = session.createEditSession(wePlayer);
                                                                     try {
-
                                                                         TerrainGenerator generator = new TerrainGenerator();
-                                                                        generator.generate(
-                                                                                editSession,
-                                                                                cuboid,
-                                                                                noiseType,
-                                                                                height,
-                                                                                scale,
-                                                                                octaves,
-                                                                                roughness,
-                                                                                surfaceBlock
-                                                                        );
+                                                                        generator.generate(editSession, cuboid, noiseType, height, scale, octaves, roughness, surfaceBlock);
 
                                                                         int changed = editSession.getBlockChangeCount();
                                                                         session.remember(editSession);
                                                                         source.sendFeedback(() -> Text.literal(
                                                                                 "\u00A7aTerrain generated! \u00A77(" + changed + " blocks changed) " +
                                                                                         "\u00A78[" + noiseArg + " h:" + height + " s:" + scale +
-                                                                                        " o:" + octaves + " r:" + roughness +
-                                                                                        " block:" + blockArg + "]"
+                                                                                        " o:" + octaves + " r:" + roughness + " block:" + blockArg + "]"
                                                                         ), false);
 
                                                                     } catch (WorldEditException e) {
@@ -151,7 +138,12 @@ public class TerrainCommand {
 
                                                                     return 1;
                                                                 })
-                                                        ))))));
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
+                );
     }
 
     public static void register() {
@@ -159,7 +151,6 @@ public class TerrainCommand {
             dispatcher.register(buildTerrainCommand());
             dispatcher.register(literal("/terrain").redirect(dispatcher.getRoot().getChild("terrain")));
         });
-
         TerrainAddonMod.LOGGER.info("Registered /terrain and //terrain commands");
     }
 }
