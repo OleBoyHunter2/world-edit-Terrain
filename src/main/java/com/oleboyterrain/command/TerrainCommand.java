@@ -51,7 +51,7 @@ public class TerrainCommand {
 
     private static LiteralArgumentBuilder<ServerCommandSource> buildTerrainCommand() {
         return literal("terrain")
-                .requires(src -> src.getPermissions().hasPermission(new Permission.Level(PermissionLevel.GAMEMASTERS)))
+                .requires(src -> true)
                 .then(argument("noiseType", StringArgumentType.word())
                         .suggests(NOISE_SUGGESTIONS)
                         .then(argument("height", IntegerArgumentType.integer(1, 256))
